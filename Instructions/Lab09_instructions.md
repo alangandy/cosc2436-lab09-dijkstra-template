@@ -38,24 +38,126 @@ Shortest path A→D: A→C→D (cost 5), not A→B→D (cost 7)
 ### Important Limitation
 Dijkstra's does NOT work with **negative edge weights**! Use Bellman-Ford for that.
 
-## Your Tasks
+---
 
-### Task 1: Implement `dijkstra()`
-Find shortest path from start to end:
-- Initialize costs: start=0, others=infinity (`float('inf')`)
-- Track parents to reconstruct path
-- Use a priority queue (heapq) for efficiency
-- Process nodes in order of lowest cost
-- Update costs when you find a shorter path
-- Return `(total_cost, path)` or `(None, [])` if no path
+## Complete Solutions
 
-### Task 2: Implement `build_path()`
-Reconstruct the path from parents dictionary:
-- Start at end node
-- Follow parent pointers back to start
-- Reverse to get path from start to end
+### Task 1: `dijkstra()` - Complete Implementation
 
-## Example
+```python
+import heapq
+from typing import Dict, List, Tuple, Optional
+
+def dijkstra(graph: Dict[str, Dict[str, int]], start: str, end: str) -> Tuple[Optional[int], List[str]]:
+    """
+    Find shortest path in weighted graph using Dijkstra's algorithm.
+    
+    From Chapter 9: Dijkstra's works with weighted graphs where
+    edges have different costs/distances.
+    
+    Args:
+        graph: Adjacency list with weights {node: {neighbor: weight}}
+        start: Starting node
+        end: Target node
+    
+    Returns:
+        Tuple of (total_cost, path) or (None, []) if no path
+    """
+    # Initialize costs: start=0, all others=infinity
+    costs = {node: float('inf') for node in graph}
+    costs[start] = 0
+    
+    # Track parents to reconstruct path
+    parents = {start: None}
+    
+    # Track processed nodes
+    processed = set()
+    
+    # Priority queue: (cost, node)
+    heap = [(0, start)]
+    
+    while heap:
+        # Get node with lowest cost
+        current_cost, current_node = heapq.heappop(heap)
+        
+        # Skip if already processed (we found a better path earlier)
+        if current_node in processed:
+            continue
+        
+        # Mark as processed
+        processed.add(current_node)
+        
+        # If we reached the end, reconstruct and return path
+        if current_node == end:
+            path = build_path(parents, start, end)
+            return (costs[end], path)
+        
+        # Check all neighbors
+        for neighbor, weight in graph.get(current_node, {}).items():
+            if neighbor in processed:
+                continue
+            
+            # Calculate new cost through current node
+            new_cost = costs[current_node] + weight
+            
+            # If this path is better, update
+            if new_cost < costs[neighbor]:
+                costs[neighbor] = new_cost
+                parents[neighbor] = current_node
+                heapq.heappush(heap, (new_cost, neighbor))
+    
+    # No path found
+    return (None, [])
+
+
+def build_path(parents: Dict[str, str], start: str, end: str) -> List[str]:
+    """Reconstruct path from parents dictionary."""
+    path = []
+    current = end
+    
+    while current is not None:
+        path.append(current)
+        current = parents.get(current)
+    
+    # Reverse to get path from start to end
+    path.reverse()
+    return path
+```
+
+---
+
+## How It Works
+
+### Step-by-step for `dijkstra()`:
+
+1. **Initialize costs**: Set start node cost to 0, all others to infinity
+2. **Initialize parents**: Dictionary to track the path
+3. **Initialize processed set**: Track nodes we've finalized
+4. **Initialize priority queue**: Start with (0, start_node)
+
+5. **Main loop** (while heap is not empty):
+   - Pop the node with lowest cost from the heap
+   - If already processed, skip it (we found a better path)
+   - Mark as processed
+   - If it's the end node, reconstruct and return the path
+   - For each neighbor:
+     - Skip if already processed
+     - Calculate new cost: `current_cost + edge_weight`
+     - If new cost < known cost:
+       - Update the cost
+       - Update the parent
+       - Add to heap with new cost
+
+6. **If loop ends without finding end**: Return `(None, [])`
+
+### `build_path()`:
+1. Start at the end node
+2. Follow parent pointers back to start
+3. Reverse the list to get path from start to end
+
+---
+
+## Example Usage
 
 ```python
 graph = {
@@ -68,32 +170,46 @@ graph = {
 >>> dijkstra(graph, "a", "d")
 (6, ['a', 'c', 'b', 'd'])
 
-# Paths considered:
-# a→b→d = 6+1 = 7
-# a→c→d = 2+5 = 7
-# a→c→b→d = 2+3+1 = 6  ← shortest!
+# Step-by-step execution:
+# 
+# Initial: costs = {a:0, b:inf, c:inf, d:inf}
+# 
+# Process 'a' (cost 0):
+#   - neighbor 'b': new_cost = 0+6 = 6 < inf → update costs[b]=6, parents[b]='a'
+#   - neighbor 'c': new_cost = 0+2 = 2 < inf → update costs[c]=2, parents[c]='a'
+#   - heap: [(2,'c'), (6,'b')]
+# 
+# Process 'c' (cost 2):
+#   - neighbor 'b': new_cost = 2+3 = 5 < 6 → update costs[b]=5, parents[b]='c'
+#   - neighbor 'd': new_cost = 2+5 = 7 < inf → update costs[d]=7, parents[d]='c'
+#   - heap: [(5,'b'), (6,'b'), (7,'d')]
+# 
+# Process 'b' (cost 5):
+#   - neighbor 'd': new_cost = 5+1 = 6 < 7 → update costs[d]=6, parents[d]='b'
+#   - heap: [(6,'b'), (6,'d'), (7,'d')]
+# 
+# Process 'b' (cost 6): already processed, skip
+# 
+# Process 'd' (cost 6): this is the end!
+#   - path = build_path(parents, 'a', 'd') = ['a', 'c', 'b', 'd']
+#   - return (6, ['a', 'c', 'b', 'd'])
+
+# Another example - no path exists
+graph2 = {
+    "a": {"b": 1},
+    "b": {},
+    "c": {}
+}
+>>> dijkstra(graph2, "a", "c")
+(None, [])
 ```
+
+---
 
 ## Testing
 ```bash
 python -m pytest tests/ -v
 ```
-
-## Hints
-- Use `heapq` for the priority queue:
-  ```python
-  import heapq
-  heapq.heappush(queue, (cost, node))
-  cost, node = heapq.heappop(queue)
-  ```
-- Use `float('inf')` for infinity
-- Skip nodes you've already processed (they have optimal cost)
-- Store `parents[neighbor] = current_node` when updating costs
-
-## Common Mistakes
-- Forgetting to skip already-processed nodes
-- Not handling the case where end is unreachable
-- Using a regular list instead of heapq (slower)
 
 ## Submission
 Commit and push your completed `dijkstra.py` file.
