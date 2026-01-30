@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Pytest Tests Pass",
+      "setup": "pip install pytest",
+      "run": "pytest tests/ -v",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 60,
+      "points": 70
+    },
+    {
+      "name": "Dijkstra Module Exists",
+      "setup": "",
+      "run": "python -c \"from dijkstra import dijkstra; print('Function exists')\"",
+      "input": "",
+      "output": "Function exists",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 15
+    },
+    {
+      "name": "Main Runs",
+      "setup": "",
+      "run": "python main.py",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 30,
+      "points": 15
+    }
+  ]
+}
